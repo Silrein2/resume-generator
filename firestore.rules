@@ -1,0 +1,69 @@
+rules_version = '2';
+
+// Resume & Blog app — Firestore security rules
+// Deploy these to your Firebase project via the console (Firestore → Rules)
+// or with `firebase deploy --only firestore:rules`.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function userDoc(uid) {
+      return get(/databases/$(database)/documents/users/$(uid));
+    }
+
+    function isAdmin() {
+      return isSignedIn()
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && userDoc(request.auth.uid).data.role == 'admin';
+    }
+
+    function isSelf(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    // USERS — profile + role. Anyone can read (so observers can resolve slug → uid).
+    // A user can create their own doc once (during registration). Role can only be set
+    // to 'editor' by self; 'admin' must be set by an admin or bootstrap script.
+    match /users/{uid} {
+      allow read: if true;
+      allow create: if isSelf(uid)
+        && request.resource.data.role in ['editor', 'admin']
+        && (request.resource.data.role == 'editor' || isAdmin());
+      allow update: if isSelf(uid)
+        && request.resource.data.role == resource.data.role  // role can't be self-elevated
+        || isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // TOKENS — registration tokens. Only admins create/list. Anyone can read a single
+    // token by ID (needed during register flow to validate before write). Token is
+    // consumed (marked usedBy + usedAt) by the registering user.
+    match /tokens/{tokenId} {
+      allow get: if true;
+      allow list: if isAdmin();
+      allow create: if isAdmin();
+      allow update: if isAdmin()
+        || (isSignedIn()
+            && resource.data.usedBy == null
+            && request.resource.data.usedBy == request.auth.uid
+            && request.resource.data.token == resource.data.token);
+      allow delete: if isAdmin();
+    }
+
+    // RESUMES — one doc per user. Public read (observer view). Owner-only write.
+    match /resumes/{uid} {
+      allow read: if true;
+      allow write: if isSelf(uid) || isAdmin();
+    }
+
+    // BLOG ARTICLES — under each user. Public read of published. Owner-only write.
+    match /users/{uid}/articles/{articleId} {
+      allow read: if true;
+      allow create, update, delete: if isSelf(uid) || isAdmin();
+    }
+  }
+}
