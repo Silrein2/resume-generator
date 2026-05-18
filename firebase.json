@@ -17,7 +17,8 @@
     ]
   },
   "hosting": {
-    "site": "resume-generator-staging"
+    "site": "resume-generator-staging",
+    "public": ".output"
   },
   "storage": {
     "rules": "storage.rules"
