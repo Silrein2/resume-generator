@@ -31,9 +31,26 @@
             <span v-if="a.updatedAt">· Updated {{ formatDate(a.updatedAt) }}</span>
           </p>
         </div>
-        <a v-if="a.published && auth.slug" :href="`/u/${auth.slug}/blog/${a.id}`" target="_blank" class="article-preview-link">
-          View ↗
-        </a>
+        <div class="article-actions">
+          <a
+            v-if="a.published && auth.slug"
+            :href="`/u/${auth.slug}/blog/${a.id}`"
+            target="_blank"
+            class="btn btn--ghost btn--small"
+            title="Open the public version in a new tab"
+          >View ↗</a>
+          <NuxtLink
+            :to="`/dashboard/blog/${a.id}`"
+            class="btn btn--ghost btn--small"
+            title="Edit this article"
+          >Edit</NuxtLink>
+          <button
+            class="btn btn--ghost btn--small btn--danger"
+            :disabled="deletingId === a.id"
+            @click="confirmDelete(a)"
+            title="Delete this article"
+          >{{ deletingId === a.id ? 'Deleting…' : 'Delete' }}</button>
+        </div>
       </div>
     </div>
   </div>
@@ -41,7 +58,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { collection, getDocs, query, orderBy } from 'firebase/firestore'
+import { collection, getDocs, query, orderBy, doc, deleteDoc } from 'firebase/firestore'
 
 definePageMeta({ middleware: 'auth', layout: 'dashboard' })
 useHead({ title: 'Blog — Dashboard' })
@@ -51,6 +68,7 @@ const router = useRouter()
 
 const articles = ref([])
 const loading = ref(true)
+const deletingId = ref('')
 
 async function loadList() {
   if (!auth.uid) return
@@ -66,6 +84,21 @@ async function loadList() {
 
 function createNew() {
   router.push('/dashboard/blog/new')
+}
+
+async function confirmDelete(article) {
+  const label = article.title || 'this article'
+  if (!confirm(`Delete "${label}"? This cannot be undone.`)) return
+  deletingId.value = article.id
+  try {
+    await deleteDoc(doc(useDb(), 'users', auth.uid, 'articles', article.id))
+    // Remove from the in-memory list immediately so the UI updates without a refetch.
+    articles.value = articles.value.filter(a => a.id !== article.id)
+  } catch (e) {
+    alert('Delete failed: ' + e.message)
+  } finally {
+    deletingId.value = ''
+  }
 }
 
 function formatDate(ts) {
@@ -136,10 +169,18 @@ onMounted(loadList)
   text-transform: uppercase;
 }
 .status--draft { background: var(--bg); color: var(--muted); }
-.article-preview-link {
-  font-size: 13px;
-  color: var(--accent);
-  text-decoration: none;
+.article-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.article-actions .btn { text-decoration: none; }
+
+@media (max-width: 600px) {
+  .article-row { flex-direction: column; align-items: flex-start; gap: 8px; }
+  .article-actions { width: 100%; justify-content: flex-start; }
 }
 
 .empty {

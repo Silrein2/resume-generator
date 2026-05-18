@@ -44,6 +44,12 @@ const { data, error: fetchError } = await useAsyncData(
     const uid = userSnap.docs[0].id
     const displayName = userSnap.docs[0].data().displayName || ''
 
+    // Don't expose articles if the public page is in draft.
+    const resSnap = await getDoc(doc(db, 'resumes', uid))
+    if (!resSnap.exists() || !resSnap.data().published) {
+      throw createError({ statusCode: 404, statusMessage: 'No one lives at this address.' })
+    }
+
     const aSnap = await getDoc(doc(db, 'users', uid, 'articles', articleId.value))
     if (!aSnap.exists() || !aSnap.data().published) {
       throw createError({ statusCode: 404, statusMessage: 'This article is not available.' })

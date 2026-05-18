@@ -180,6 +180,12 @@ Nuxt's default build produces a Node server, so you need a Node-capable host:
 Set `NUXT_PUBLIC_SITE_URL` to your production domain in your host's env vars so
 OG meta tags get correct absolute URLs.
 
+## What's new in 0.3.0
+
+- **Publish / Draft toggle for the résumé.** New users default to **Draft**, meaning their `/u/:slug` page returns 404 to visitors until they explicitly publish. The dashboard shows a banner with the current state and a one-click toggle. Unpublishing hides the résumé *and* the blog from the public side (individual articles' `published` flags still apply once the public page is live).
+- **Edit + Delete buttons on the article list.** Previously only the title was clickable; now each row has explicit View / Edit / Delete buttons. Delete confirms before deleting.
+- **Newline bug fixed in the sidebar sections textarea.** The editor now uses a string buffer (`itemsText`) bound directly via `v-model`, with cleanup happening only at save time — so pressing Enter works exactly like it should.
+
 ## What's new in 0.2.0
 
 - **Migrated to Nuxt 3** — file-based routing, auto-imports, SSR

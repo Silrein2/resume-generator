@@ -36,7 +36,13 @@ const { data, error: fetchError } = await useAsyncData(
     const displayName = userDoc.data().displayName || ''
 
     const resSnap = await getDoc(doc(db, 'resumes', uid))
-    const resumeData = resSnap.exists() ? resSnap.data() : null
+    if (!resSnap.exists() || !resSnap.data().published) {
+      // Either no resume exists, or it's still in draft. Either way, the public
+      // page shouldn't expose it — 404 looks identical to "user doesn't exist",
+      // which is what we want for unpublished drafts.
+      throw createError({ statusCode: 404, statusMessage: 'No one lives at this address.' })
+    }
+    const resumeData = resSnap.data()
 
     const resume = resumeData ?? {
       profileImageUrl: '',

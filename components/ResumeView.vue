@@ -27,7 +27,7 @@
         >
           <h3 class="section-title">{{ section.title }}</h3>
           <ul>
-            <li v-for="(item, i) in cleanItems(section.items)" :key="i">{{ item }}</li>
+            <li v-for="(item, i) in cleanItems(section)" :key="i">{{ item }}</li>
           </ul>
         </div>
       </aside>
@@ -64,10 +64,14 @@ const initials = computed(() => {
 })
 
 // Skip blank/whitespace-only entries when rendering the sidebar lists.
-// While the user is editing the left-sidebar textarea, empty lines exist
-// transiently in the items array — we don't want them showing as empty rows.
-function cleanItems(items) {
-  return (items || []).map(l => (l || '').trim()).filter(Boolean)
+// Accepts either a section with `itemsText` (live editor buffer — a raw string
+// with newlines) or with `items` (the saved array form). This lets the same
+// component render in the dashboard preview and on the public /u/:slug page.
+function cleanItems(section) {
+  const raw = section.itemsText != null
+    ? section.itemsText
+    : (section.items || []).join('\n')
+  return raw.split('\n').map(l => l.trim()).filter(Boolean)
 }
 
 defineExpose({ stageRef, pageRef })

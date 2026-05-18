@@ -54,6 +54,12 @@ const { data, error: fetchError } = await useAsyncData(
     const uid = userSnap.docs[0].id
     const displayName = userSnap.docs[0].data().displayName || 'this writer'
 
+    // Don't expose the blog list if the public page is in draft.
+    const resSnap = await getDoc(doc(db, 'resumes', uid))
+    if (!resSnap.exists() || !resSnap.data().published) {
+      throw createError({ statusCode: 404, statusMessage: 'No one lives at this address.' })
+    }
+
     const aQ = query(collection(db, 'users', uid, 'articles'), orderBy('updatedAt', 'desc'))
     const aSnap = await getDocs(aQ)
     const articles = aSnap.docs

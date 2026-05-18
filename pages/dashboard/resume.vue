@@ -15,6 +15,31 @@
       </div>
     </header>
 
+    <!-- Publish state banner -->
+    <div class="publish-banner" :class="{ 'publish-banner--live': resume.published }">
+      <div class="publish-banner-text">
+        <span class="publish-pill" :class="{ 'publish-pill--live': resume.published }">
+          {{ resume.published ? '● Live' : '○ Draft' }}
+        </span>
+        <span class="publish-msg">
+          <template v-if="resume.published">
+            Your résumé is publicly visible at <code>/u/{{ auth.slug }}</code>.
+          </template>
+          <template v-else>
+            Your résumé isn't visible publicly yet. Anyone who visits your public link will see a "not found" page.
+          </template>
+        </span>
+      </div>
+      <button
+        class="btn btn--small"
+        :class="{ 'btn--ghost': resume.published }"
+        @click="togglePublish"
+        :disabled="togglingPublish"
+      >
+        {{ togglingPublish ? 'Saving…' : (resume.published ? 'Unpublish' : 'Publish') }}
+      </button>
+    </div>
+
     <!-- Share panel -->
     <div v-if="showShare" class="share-panel card">
       <div class="share-grid">
@@ -103,8 +128,7 @@
               <button class="btn btn--ghost btn--small" @click="removeLeftSection(idx)">Remove</button>
             </div>
             <textarea
-              :value="section.items.join('\n')"
-              @input="section.items = $event.target.value.split('\n').map(l => l.trim()).filter(Boolean)"
+              v-model="section.itemsText"
               class="textarea"
               placeholder="Python&#10;JavaScript&#10;Go"
               rows="4"
@@ -217,7 +241,8 @@ const resume = reactive({
   phone: '',
   location: '',
   leftSections: [],
-  rightSections: []
+  rightSections: [],
+  published: false
 })
 
 const dirty = ref(false)
@@ -229,6 +254,7 @@ const loading = ref(true)
 const showShare = ref(false)
 const copied = ref(false)
 const exporting = ref(false)
+const togglingPublish = ref(false)
 
 const resumeRef = ref(null)
 const viewportRef = ref(null)
@@ -276,7 +302,7 @@ function uid() {
 }
 
 function addLeftSection() {
-  resume.leftSections.push({ id: uid(), title: 'Skills', items: [] })
+  resume.leftSections.push({ id: uid(), title: 'Skills', items: [], itemsText: '' })
 }
 function removeLeftSection(i) { resume.leftSections.splice(i, 1) }
 
@@ -297,21 +323,31 @@ async function load() {
   if (!auth.uid) return
   const snap = await getDoc(doc(useDb(), 'resumes', auth.uid))
   if (snap.exists()) {
-    Object.assign(resume, snap.data())
-    resume.leftSections = resume.leftSections || []
-    resume.rightSections = resume.rightSections || []
+    const data = snap.data()
+    Object.assign(resume, data)
+    // Seed itemsText from stored items so the textarea has something to bind to.
+    // We edit through itemsText (a raw string) and re-derive items at save time.
+    resume.leftSections = (data.leftSections || []).map(s => ({
+      id: s.id,
+      title: s.title || '',
+      items: s.items || [],
+      itemsText: (s.items || []).join('\n')
+    }))
+    resume.rightSections = data.rightSections || []
+    resume.published = !!data.published
   } else {
     resume.name = auth.profile?.displayName || ''
     resume.email = auth.profile?.email || ''
     resume.leftSections = [
-      { id: uid(), title: 'Skills', items: [] },
-      { id: uid(), title: 'Languages', items: [] }
+      { id: uid(), title: 'Skills', items: [], itemsText: '' },
+      { id: uid(), title: 'Languages', items: [], itemsText: '' }
     ]
     resume.rightSections = [
       { id: uid(), title: 'Summary', body: '' },
       { id: uid(), title: 'Experience', body: '' },
       { id: uid(), title: 'Education', body: '' }
     ]
+    resume.published = false
   }
   loading.value = false
   await nextTick()
@@ -322,6 +358,14 @@ async function save() {
   if (!auth.uid) return
   saving.value = true
   try {
+    // Derive clean items from itemsText at save time. We keep itemsText only in
+    // local state — Firestore only stores the cleaned items array.
+    const cleanedLeft = resume.leftSections.map(s => ({
+      id: s.id,
+      title: s.title,
+      items: (s.itemsText || '').split('\n').map(l => l.trim()).filter(Boolean)
+    }))
+
     await setDoc(doc(useDb(), 'resumes', auth.uid), {
       profileImageUrl: resume.profileImageUrl,
       name: resume.name,
@@ -329,8 +373,9 @@ async function save() {
       email: resume.email,
       phone: resume.phone,
       location: resume.location,
-      leftSections: resume.leftSections,
+      leftSections: cleanedLeft,
       rightSections: resume.rightSections,
+      published: !!resume.published,
       updatedAt: serverTimestamp()
     }, { merge: true })
     dirty.value = false
@@ -388,6 +433,26 @@ async function downloadPdf() {
   }
 }
 
+async function togglePublish() {
+  if (!auth.uid) return
+  togglingPublish.value = true
+  try {
+    // If there are unsaved edits, persist them first so what gets published
+    // matches what the user sees on screen.
+    if (dirty.value) await save()
+    const next = !resume.published
+    await setDoc(doc(useDb(), 'resumes', auth.uid), {
+      published: next,
+      updatedAt: serverTimestamp()
+    }, { merge: true })
+    resume.published = next
+  } catch (e) {
+    alert('Failed to update publish state: ' + e.message)
+  } finally {
+    togglingPublish.value = false
+  }
+}
+
 onMounted(load)
 </script>
 
@@ -415,6 +480,65 @@ onMounted(load)
   margin: 0;
 }
 .actions { display: flex; gap: 8px; }
+
+/* ============================================================
+   Publish banner — shows draft/live state above the form.
+   ============================================================ */
+.publish-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 18px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface-2);
+  flex-wrap: wrap;
+}
+.publish-banner--live {
+  border-color: rgba(61, 107, 72, 0.3);
+  background: rgba(61, 107, 72, 0.05);
+}
+.publish-banner-text {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  flex: 1;
+  min-width: 200px;
+}
+.publish-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--bg);
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.publish-pill--live {
+  background: rgba(61, 107, 72, 0.12);
+  color: var(--success);
+}
+.publish-msg {
+  font-size: 13px;
+  color: var(--ink-soft);
+  line-height: 1.5;
+}
+.publish-msg code {
+  font-family: var(--font-mono);
+  background: var(--bg);
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-size: 12px;
+  color: var(--ink);
+}
 
 .share-panel { background: var(--surface-2); }
 .share-grid {
