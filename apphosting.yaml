@@ -33,5 +33,5 @@ env:
     availability: [BUILD, RUNTIME]
 
   - variable: NUXT_PUBLIC_SITE_URL
-    value: "https://CHANGE-ME-AFTER-FIRST-DEPLOY-test"
+    value: "https://resume-backend--resume-generator-7a7f3.asia-southeast1.hosted.app"
     availability: [BUILD, RUNTIME]
