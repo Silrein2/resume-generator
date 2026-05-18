@@ -175,34 +175,14 @@
         <div class="preview-frame">
           <header class="preview-controls">
             <span class="preview-label">Preview</span>
-            <div class="zoom-controls">
-              <button
-                class="zoom-btn"
-                @click="zoomOut"
-                :disabled="previewScale <= MIN_SCALE"
-                title="Zoom out"
-              >−</button>
-              <input
-                type="range"
-                :min="MIN_SCALE * 100"
-                :max="MAX_SCALE * 100"
-                step="5"
-                :value="previewScale * 100"
-                @input="onSliderInput"
-                class="zoom-slider"
-                aria-label="Preview zoom"
-              />
-              <button
-                class="zoom-btn"
-                @click="zoomIn"
-                :disabled="previewScale >= MAX_SCALE"
-                title="Zoom in"
-              >+</button>
-              <span class="zoom-value">{{ Math.round(previewScale * 100) }}%</span>
-              <button class="btn btn--ghost btn--small zoom-reset" @click="resetZoom" title="Reset to fit">
-                Fit
-              </button>
-            </div>
+            <ZoomControls
+              v-model="previewScale"
+              :min="MIN_SCALE"
+              :max="MAX_SCALE"
+              :step="0.05"
+              reset-label="Fit"
+              @reset="resetZoom"
+            />
           </header>
 
           <div class="preview-viewport" ref="viewportRef">
@@ -270,12 +250,6 @@ const MAX_SCALE = 1.2
 const DEFAULT_SCALE = 0.75
 const previewScale = ref(DEFAULT_SCALE)
 
-function zoomIn() {
-  previewScale.value = Math.min(MAX_SCALE, +(previewScale.value + 0.05).toFixed(2))
-}
-function zoomOut() {
-  previewScale.value = Math.max(MIN_SCALE, +(previewScale.value - 0.05).toFixed(2))
-}
 function resetZoom() {
   previewScale.value = DEFAULT_SCALE
   // Scroll viewport back to top-left on reset
@@ -285,10 +259,6 @@ function resetZoom() {
       viewportRef.value.scrollLeft = 0
     }
   })
-}
-function onSliderInput(e) {
-  const v = parseInt(e.target.value, 10)
-  previewScale.value = v / 100
 }
 
 const publicUrl = computed(() => {
@@ -686,70 +656,6 @@ onMounted(load)
   text-transform: uppercase;
   color: var(--ink-soft);
 }
-.zoom-controls {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.zoom-btn {
-  width: 28px;
-  height: 28px;
-  border-radius: var(--radius);
-  border: 1px solid var(--border);
-  background: var(--surface);
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--ink-soft);
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 120ms ease;
-}
-.zoom-btn:hover:not(:disabled) {
-  background: var(--ink);
-  color: var(--bg);
-  border-color: var(--ink);
-}
-.zoom-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-
-.zoom-slider {
-  flex: 0 0 110px;
-  -webkit-appearance: none;
-  appearance: none;
-  height: 4px;
-  background: var(--border);
-  border-radius: 999px;
-  outline: none;
-  cursor: pointer;
-}
-.zoom-slider::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 14px;
-  height: 14px;
-  background: var(--accent);
-  border-radius: 50%;
-  cursor: pointer;
-  border: none;
-}
-.zoom-slider::-moz-range-thumb {
-  width: 14px;
-  height: 14px;
-  background: var(--accent);
-  border-radius: 50%;
-  cursor: pointer;
-  border: none;
-}
-.zoom-value {
-  font-family: var(--font-mono);
-  font-size: 12px;
-  color: var(--ink-soft);
-  min-width: 36px;
-  text-align: right;
-  font-variant-numeric: tabular-nums;
-}
-.zoom-reset { margin-left: 4px; }
 
 .preview-viewport {
   overflow: auto;

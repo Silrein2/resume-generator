@@ -7,12 +7,33 @@
       <NuxtLink to="/" class="btn btn--ghost">Go home</NuxtLink>
     </div>
     <template v-else-if="resume">
-      <ResumeView :resume="resume" />
+      <!-- Sticky control bar: zoom controls always reachable -->
+      <div class="reader-bar">
+        <div class="reader-bar-inner">
+          <ZoomControls
+            v-model="zoom"
+            :min="MIN_ZOOM"
+            :max="MAX_ZOOM"
+            reset-label="Fit width"
+            @reset="fitToWidth"
+          />
+        </div>
+      </div>
+
+      <!-- Scrollable viewport. Horizontal scrollbar appears only when the
+           zoomed content exceeds viewport width; vertical scrollbar appears
+           when the resume grows past viewport height. -->
+      <div class="reader-viewport" ref="viewportRef">
+        <div class="reader-stage" :style="{ zoom }">
+          <ResumeView :resume="resume" />
+        </div>
+      </div>
     </template>
   </div>
 </template>
 
 <script setup>
+import { ref, computed, onMounted, nextTick } from 'vue'
 import { collection, query, where, getDocs, limit, doc, getDoc } from 'firebase/firestore'
 
 const route = useRoute()
@@ -20,8 +41,7 @@ const config = useRuntimeConfig()
 const slug = computed(() => String(route.params.slug))
 
 // SSR-friendly data fetching — runs on the server first so we can populate
-// meta tags for link previews. The Firebase client SDK works in Node;
-// our Firestore security rules allow public reads on users/resumes/articles.
+// meta tags for link previews.
 const { data, error: fetchError } = await useAsyncData(
   `resume-${slug.value}`,
   async () => {
@@ -37,16 +57,13 @@ const { data, error: fetchError } = await useAsyncData(
 
     const resSnap = await getDoc(doc(db, 'resumes', uid))
     if (!resSnap.exists() || !resSnap.data().published) {
-      // Either no resume exists, or it's still in draft. Either way, the public
-      // page shouldn't expose it — 404 looks identical to "user doesn't exist",
-      // which is what we want for unpublished drafts.
       throw createError({ statusCode: 404, statusMessage: 'No one lives at this address.' })
     }
     const r = resSnap.data()
 
     // Build a POJO with only the fields we render. Firestore Timestamps
     // (updatedAt/createdAt) aren't serializable by Nuxt's SSR payload encoder,
-    // so we drop them — or convert them to ISO strings where we need them.
+    // so we drop them.
     const resume = {
       profileImageUrl: r.profileImageUrl || '',
       name: r.name || displayName,
@@ -63,11 +80,33 @@ const { data, error: fetchError } = await useAsyncData(
 )
 
 const resume = computed(() => data.value?.resume)
-const displayName = computed(() => data.value?.displayName || '')
 const error = computed(() => fetchError.value ? (fetchError.value.statusMessage || 'Failed to load.') : '')
 
-// SSR meta tags — this is the payoff for migrating to Nuxt. When someone
-// pastes the URL into LinkedIn, Slack, etc., the preview shows real data.
+// ============================================================
+// Zoom — default fit-to-width, capped at 100% on wide screens.
+// ============================================================
+const A4_WIDTH = 794             // résumé page natural width in CSS px
+const MIN_ZOOM = 0.3
+const MAX_ZOOM = 2.0
+const zoom = ref(1)              // initial value; corrected on mount
+const viewportRef = ref(null)
+
+function fitToWidth() {
+  if (!import.meta.client || !viewportRef.value) return
+  const w = viewportRef.value.clientWidth
+  if (!w) return
+  // Leave a small breathing margin so the page isn't hugging the edge.
+  // Cap at 1.0 so we don't artificially upscale on large desktop screens.
+  const fit = Math.min(1, (w - 24) / A4_WIDTH)
+  zoom.value = Math.max(MIN_ZOOM, +fit.toFixed(2))
+}
+
+onMounted(async () => {
+  await nextTick()
+  fitToWidth()
+})
+
+// SSR meta tags
 useSeoMeta({
   title: () => resume.value?.name
     ? `${resume.value.name} — Resume`
@@ -93,7 +132,8 @@ useSeoMeta({
 </script>
 
 <style scoped>
-.observer { display: flex; flex-direction: column; flex: 1; }
+.observer { display: flex; flex-direction: column; flex: 1; min-height: 100vh; }
+
 .state {
   padding: 80px 24px;
   text-align: center;
@@ -103,5 +143,56 @@ useSeoMeta({
   font-family: var(--font-display);
   font-size: 1.8rem;
   margin-bottom: 16px;
+}
+
+/* ============================================================
+   Reader bar — sticky strip with zoom controls.
+   ============================================================ */
+.reader-bar {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border-soft);
+  box-shadow: var(--shadow-sm);
+}
+.reader-bar-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 8px 16px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* ============================================================
+   Reader viewport — the scrollable window the resume sits in.
+   Horizontal scrollbar appears only when zoomed content > viewport width.
+   Vertical scrollbar appears for tall content. The page itself doesn't
+   scroll past this — same model as a PDF viewer.
+   ============================================================ */
+.reader-viewport {
+  flex: 1;
+  overflow: auto;
+  background: var(--bg-grain);
+  min-height: 0;
+}
+.reader-stage {
+  /* inline-block sizes to content; min-width: 100% prevents the stage from
+     being narrower than the viewport when content is small. With CSS `zoom`
+     applied, the layout dimensions scale, so the browser scrolls correctly. */
+  display: inline-block;
+  min-width: 100%;
+}
+
+/* Trim the surrounding padding the ResumeView's a4-stage adds, since the
+   reader-viewport already provides the surrounding chrome. */
+.reader-stage :deep(.a4-stage) {
+  padding: 16px;
+  background: transparent;
+}
+
+@media (max-width: 600px) {
+  .reader-bar-inner { padding: 6px 10px; }
+  .reader-stage :deep(.a4-stage) { padding: 8px; }
 }
 </style>

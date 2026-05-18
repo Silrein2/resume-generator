@@ -147,4 +147,10 @@ function excerpt(html, max = 200) {
   margin-bottom: 16px;
 }
 .article-body { padding: 0; }
+
+@media (max-width: 600px) {
+  .article-shell { padding: 32px 18px 60px; }
+  .article-header h1 { font-size: 1.9rem; }
+  .article-header { margin-bottom: 28px; }
+}
 </style>

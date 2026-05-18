@@ -180,6 +180,13 @@ Nuxt's default build produces a Node server, so you need a Node-capable host:
 Set `NUXT_PUBLIC_SITE_URL` to your production domain in your host's env vars so
 OG meta tags get correct absolute URLs.
 
+## What's new in 0.4.0
+
+- **Public résumé reader.** The `/u/:slug` page now wraps the résumé in a scrollable viewport with sticky zoom controls. Default zoom auto-fits to viewport width (capped at 100%), so portrait mobile no longer cuts off the left edge. Same control set as the dashboard preview — minus, slider, plus, percentage, and **Fit width** to reset.
+- **Shared `ZoomControls` component.** Single source of truth for the zoom UI; used by both the dashboard preview and the public résumé reader. Reduces drift between the two.
+- **Mobile-responsive ObserverNav.** The slug indicator is hidden on screens narrower than 600px; tabs and login link get smaller padding. Login link is hidden below 380px to make room for the brand + tabs.
+- **Mobile-responsive article page.** Reduced top padding and h1 size on screens narrower than 600px for better readability.
+
 ## What's new in 0.3.0
 
 - **Publish / Draft toggle for the résumé.** New users default to **Draft**, meaning their `/u/:slug` page returns 404 to visitors until they explicitly publish. The dashboard shows a banner with the current state and a one-click toggle. Unpublishing hides the résumé *and* the blog from the public side (individual articles' `published` flags still apply once the public page is live).

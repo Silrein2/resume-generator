@@ -92,4 +92,25 @@ const auth = useAuthStore()
   text-decoration: none;
 }
 .right .login-link:hover { color: var(--accent); }
+
+/* ============================================================
+   Mobile portrait — tighten everything so the nav fits ~360px viewports.
+   ============================================================ */
+@media (max-width: 600px) {
+  .obs-nav { padding: 10px 0; }
+  .obs-nav-inner {
+    padding: 0 12px;
+    gap: 8px;
+  }
+  .slug { display: none; }
+  .tab {
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+  .right .login-link { font-size: 12px; }
+}
+
+@media (max-width: 380px) {
+  .right .login-link { display: none; }
+}
 </style>
