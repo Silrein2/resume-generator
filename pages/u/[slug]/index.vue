@@ -42,17 +42,20 @@ const { data, error: fetchError } = await useAsyncData(
       // which is what we want for unpublished drafts.
       throw createError({ statusCode: 404, statusMessage: 'No one lives at this address.' })
     }
-    const resumeData = resSnap.data()
+    const r = resSnap.data()
 
-    const resume = resumeData ?? {
-      profileImageUrl: '',
-      name: displayName,
-      title: '',
-      email: '',
-      phone: '',
-      location: '',
-      leftSections: [],
-      rightSections: []
+    // Build a POJO with only the fields we render. Firestore Timestamps
+    // (updatedAt/createdAt) aren't serializable by Nuxt's SSR payload encoder,
+    // so we drop them — or convert them to ISO strings where we need them.
+    const resume = {
+      profileImageUrl: r.profileImageUrl || '',
+      name: r.name || displayName,
+      title: r.title || '',
+      email: r.email || '',
+      phone: r.phone || '',
+      location: r.location || '',
+      leftSections: r.leftSections || [],
+      rightSections: r.rightSections || []
     }
 
     return { resume, displayName }
