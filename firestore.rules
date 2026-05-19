@@ -54,10 +54,24 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
-    // RESUMES — one doc per user. Public read (observer view). Owner-only write.
+    // RESUMES — one doc per user. Public read (observer view). Owner-only write,
+    // EXCEPT that anonymous visitors may increment view-tracking fields on a
+    // published résumé. The diff().affectedKeys().hasOnly() check guarantees they
+    // can't touch any other field through this loophole.
+    //
+    // Note: this is a vanity metric, mildly exploitable (someone could spam-
+    // increment a count to inflate it). Preventing that requires a server-side
+    // function with admin SDK — not worth the infra for a view counter. If
+    // counter integrity ever matters, replace with a Cloud Function trigger.
     match /resumes/{uid} {
       allow read: if true;
-      allow write: if isSelf(uid) || isAdmin();
+      allow create, delete: if isSelf(uid) || isAdmin();
+      allow update: if isSelf(uid) || isAdmin()
+        || (
+          resource.data.published == true
+          && request.resource.data.diff(resource.data).affectedKeys()
+               .hasOnly(['viewCount', 'viewCountsByMonth', 'lastViewedAt'])
+        );
     }
 
     // BLOG ARTICLES — under each user. Public read of published. Owner-only write.

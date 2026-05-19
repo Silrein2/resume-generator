@@ -199,7 +199,7 @@ onMounted(load)
   text-transform: uppercase;
   font-size: 10px;
 }
-.token-actions { display: flex; gap: 6px; }
+.token-actions { display: flex; gap: 6px; flex-shrink: 0; }
 .empty {
   padding: 40px;
   text-align: center;
@@ -208,5 +208,21 @@ onMounted(load)
   border: 1px dashed var(--border);
   border-radius: var(--radius);
   margin-top: 20px;
+}
+
+@media (max-width: 600px) {
+  .token-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .token-actions { width: 100%; }
+  .token-code { font-size: 13px; }
+  .actions {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+  .counts { text-align: left; }
 }
 </style>

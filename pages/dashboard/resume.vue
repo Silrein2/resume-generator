@@ -40,6 +40,24 @@
       </button>
     </div>
 
+    <!-- Analytics — visible only when résumé is published (no point showing
+         zeros when nobody can visit it yet) -->
+    <div v-if="resume.published" class="analytics card">
+      <div class="analytics-stat">
+        <div class="stat-label">Total views</div>
+        <div class="stat-value">{{ resume.viewCount || 0 }}</div>
+      </div>
+      <div class="analytics-stat">
+        <div class="stat-label">This month</div>
+        <div class="stat-value">{{ viewsThisMonth }}</div>
+      </div>
+      <div class="analytics-stat">
+        <div class="stat-label">Last viewed</div>
+        <div class="stat-value stat-value--soft">{{ lastViewedDisplay }}</div>
+      </div>
+      <p class="analytics-hint">Your own visits aren't counted.</p>
+    </div>
+
     <!-- Share panel -->
     <div v-if="showShare" class="share-panel card">
       <div class="share-grid">
@@ -62,10 +80,28 @@
       </div>
     </div>
 
+    <!-- Mobile tab switcher: shown only below the side-by-side breakpoint.
+         Lets the user view edit form OR preview at full width without scrolling
+         past a half-screen preview to reach the form. -->
+    <div class="mobile-tabs no-print">
+      <button
+        type="button"
+        class="mobile-tab"
+        :class="{ active: mobileTab === 'edit' }"
+        @click="mobileTab = 'edit'"
+      >Edit</button>
+      <button
+        type="button"
+        class="mobile-tab"
+        :class="{ active: mobileTab === 'preview' }"
+        @click="mobileTab = 'preview'"
+      >Preview</button>
+    </div>
+
     <!-- Editor + preview side-by-side -->
-    <div class="edit-grid">
+    <div class="edit-grid" :data-mobile-tab="mobileTab">
       <!-- Form -->
-      <section class="edit-form">
+      <section class="edit-form mobile-pane mobile-pane--edit">
         <div class="card">
           <h3 class="section-h">Profile</h3>
 
@@ -146,26 +182,34 @@
               :palette="resumePapers"
             />
             <ColorPicker
-              v-model="resume.theme.headerBg"
-              label="Header background"
-              :palette="resumePapers"
-            />
-            <ColorPicker
-              v-model="resume.theme.sidebarBg"
-              label="Sidebar background"
-              :palette="resumePapers"
-            />
-            <ColorPicker
-              v-model="resume.theme.photoBg"
-              label="Photo cell background"
-              :palette="resumeDarks"
-            />
-            <ColorPicker
               v-model="resume.theme.ink"
               label="Text color"
               :palette="resumeInks"
             />
           </div>
+
+          <details class="advanced-colors" :open="advancedColorsOpen">
+            <summary @click.prevent="advancedColorsOpen = !advancedColorsOpen">
+              {{ advancedColorsOpen ? '− Hide' : '+ Show' }} advanced colors
+            </summary>
+            <div class="theme-row">
+              <ColorPicker
+                v-model="resume.theme.headerBg"
+                label="Header background"
+                :palette="resumePapers"
+              />
+              <ColorPicker
+                v-model="resume.theme.sidebarBg"
+                label="Sidebar background"
+                :palette="resumePapers"
+              />
+              <ColorPicker
+                v-model="resume.theme.photoBg"
+                label="Photo cell background"
+                :palette="resumeDarks"
+              />
+            </div>
+          </details>
 
           <button class="btn btn--ghost btn--small" @click="resetTheme">Reset to defaults</button>
         </div>
@@ -227,7 +271,7 @@
       </section>
 
       <!-- Preview (with zoom controls) -->
-      <section class="edit-preview no-print">
+      <section class="edit-preview mobile-pane mobile-pane--preview no-print">
         <div class="preview-frame">
           <header class="preview-controls">
             <span class="preview-label">Preview</span>
@@ -328,12 +372,38 @@ const resume = reactive({
   leftSections: [],
   rightSections: [],
   published: false,
-  theme: { ...DEFAULT_THEME }
+  theme: { ...DEFAULT_THEME },
+  // Analytics — populated from Firestore, never written from this page
+  viewCount: 0,
+  viewCountsByMonth: {},
+  lastViewedAt: null
 })
 
 function resetTheme() {
   Object.assign(resume.theme, DEFAULT_THEME)
 }
+
+// Current YYYY-MM key for indexing into viewCountsByMonth.
+const viewsThisMonth = computed(() => {
+  const k = new Date().toISOString().slice(0, 7)
+  return resume.viewCountsByMonth?.[k] || 0
+})
+
+// Human-friendly relative time for lastViewedAt (a Firestore Timestamp).
+const lastViewedDisplay = computed(() => {
+  const t = resume.lastViewedAt
+  if (!t) return '—'
+  const d = t.toDate ? t.toDate() : new Date(t)
+  const diff = Date.now() - d.getTime()
+  const mins = Math.floor(diff / 60000)
+  if (mins < 1) return 'Just now'
+  if (mins < 60) return `${mins} min ago`
+  const hrs = Math.floor(mins / 60)
+  if (hrs < 24) return `${hrs} hr ago`
+  const days = Math.floor(hrs / 24)
+  if (days < 30) return `${days} day${days === 1 ? '' : 's'} ago`
+  return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
+})
 
 const dirty = ref(false)
 const saving = ref(false)
@@ -345,6 +415,8 @@ const showShare = ref(false)
 const copied = ref(false)
 const exporting = ref(false)
 const togglingPublish = ref(false)
+const mobileTab = ref('edit') // 'edit' | 'preview' — only effective below 1100px
+const advancedColorsOpen = ref(false)
 
 const resumeRef = ref(null)
 const viewportRef = ref(null)
@@ -418,6 +490,10 @@ async function load() {
     // Merge stored theme with defaults so missing keys still have valid values
     // (handles users upgrading from a pre-theme version of the resume doc).
     resume.theme = { ...DEFAULT_THEME, ...(data.theme || {}) }
+    // Analytics
+    resume.viewCount = data.viewCount || 0
+    resume.viewCountsByMonth = data.viewCountsByMonth || {}
+    resume.lastViewedAt = data.lastViewedAt || null
   } else {
     resume.name = auth.profile?.displayName || ''
     resume.email = auth.profile?.email || ''
@@ -625,6 +701,76 @@ onMounted(load)
   color: var(--ink);
 }
 
+/* ============================================================
+   Analytics card — three stat blocks side by side.
+   ============================================================ */
+.analytics {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0;
+  align-items: end;
+  padding: 18px 24px;
+  position: relative;
+}
+.analytics-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 0 8px;
+  border-left: 1px solid var(--border-soft);
+}
+.analytics-stat:first-child {
+  padding-left: 0;
+  border-left: 0;
+}
+.stat-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.stat-value {
+  font-family: var(--font-display);
+  font-size: 2rem;
+  font-weight: 500;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+.stat-value--soft {
+  font-size: 1.05rem;
+  color: var(--ink-soft);
+  font-weight: 400;
+}
+.analytics-hint {
+  position: absolute;
+  bottom: 6px;
+  right: 16px;
+  margin: 0;
+  font-size: 10px;
+  font-family: var(--font-mono);
+  color: var(--muted);
+  letter-spacing: 0.04em;
+}
+
+@media (max-width: 600px) {
+  .analytics {
+    grid-template-columns: 1fr 1fr;
+    gap: 16px 0;
+    padding: 16px;
+  }
+  .analytics-stat:nth-child(3) {
+    grid-column: 1 / -1;
+    border-left: 0;
+    padding-left: 0;
+    border-top: 1px solid var(--border-soft);
+    padding-top: 12px;
+  }
+  .stat-value { font-size: 1.6rem; }
+  .analytics-hint { position: static; margin-top: 8px; }
+}
+
 .share-panel { background: var(--surface-2); }
 .share-grid {
   display: grid;
@@ -665,10 +811,52 @@ onMounted(load)
 @media (max-width: 1400px) {
   .edit-grid { grid-template-columns: minmax(0, 1fr) 520px; }
 }
+
+/* ============================================================
+   Mobile tab switcher — hidden on desktop. Below the
+   side-by-side breakpoint, exactly one pane is visible at a
+   time so the user always has full width to work with.
+   ============================================================ */
+.mobile-tabs {
+  display: none;
+  margin-bottom: 16px;
+}
+
 @media (max-width: 1100px) {
-  .edit-grid { grid-template-columns: 1fr; }
-  .edit-preview { order: -1; }
-  .preview-viewport { max-height: 70vh !important; }
+  .edit-grid {
+    grid-template-columns: 1fr;
+  }
+  .mobile-tabs {
+    display: inline-flex;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 4px;
+    gap: 2px;
+  }
+  .mobile-tab {
+    background: transparent;
+    border: 0;
+    padding: 6px 18px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--ink-soft);
+    border-radius: var(--radius);
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .mobile-tab:hover { color: var(--ink); }
+  .mobile-tab.active {
+    background: var(--ink);
+    color: var(--bg);
+  }
+
+  /* Show exactly the pane matching the active tab */
+  .edit-grid[data-mobile-tab="edit"] .mobile-pane--preview { display: none; }
+  .edit-grid[data-mobile-tab="preview"] .mobile-pane--edit { display: none; }
+
+  /* Preview takes shorter viewport on mobile since the page itself can scroll */
+  .preview-viewport { height: calc(100vh - 240px) !important; min-height: 360px !important; }
 }
 
 .edit-form { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
@@ -697,6 +885,31 @@ onMounted(load)
   gap: 16px 12px;
   margin-top: 14px;
   margin-bottom: 14px;
+}
+
+.advanced-colors {
+  margin-top: 4px;
+  margin-bottom: 14px;
+}
+.advanced-colors summary {
+  font-size: 12px;
+  font-family: var(--font-mono);
+  color: var(--muted);
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  padding: 6px 0;
+  list-style: none;
+  user-select: none;
+}
+.advanced-colors summary::-webkit-details-marker { display: none; }
+.advanced-colors summary:hover { color: var(--ink); }
+.advanced-colors[open] summary { margin-bottom: 8px; }
+
+@media (max-width: 600px) {
+  .theme-row {
+    grid-template-columns: 1fr 1fr;
+    gap: 14px 10px;
+  }
 }
 
 .image-row { display: flex; align-items: center; gap: 16px; }

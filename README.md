@@ -180,6 +180,25 @@ Nuxt's default build produces a Node server, so you need a Node-capable host:
 Set `NUXT_PUBLIC_SITE_URL` to your production domain in your host's env vars so
 OG meta tags get correct absolute URLs.
 
+## What's new in 0.6.0
+
+**Mobile dashboard:**
+- **Hamburger menu** on screens < 760px wide. The sidebar slides in from the left over a dimmed backdrop. Closes on backdrop tap, route change, or Escape.
+- **Tabbed mobile editor** for the résumé page. Below 1100px viewport, the Edit form and Preview are no longer stacked — they share a tab switcher at the top and each takes full width when active.
+- **Style card density.** Color pickers split into "essentials" (accent, paper, text color) shown by default, and an "advanced" expandable section (header bg, sidebar bg, photo cell bg).
+- **Admin token list** reflows on narrow screens — actions stack below the token data.
+
+**Analytics:**
+- **View counts** on public résumé pages. Tracked client-side after hydration so bots without JS don't inflate counts. Owner's own visits are excluded automatically.
+- **Monthly buckets** — `viewCountsByMonth.{YYYY-MM}` keeps a count per calendar month, used for the "This month" stat.
+- **Stats card on the dashboard** shows total views, this month, and last viewed (relative time). Only visible once you've published your résumé.
+- **Firestore rule update** — view-tracking fields on published résumés can be incremented by anonymous visitors; all other writes still require ownership.
+- **DNT respected** — visitors with Do-Not-Track enabled are not counted.
+
+**Migration:**
+- Firestore rules need to be redeployed: `firebase deploy --only firestore:rules` after pulling this version.
+- Existing résumés get a `viewCount` of 0 automatically. No data migration needed.
+
 ## What's new in 0.5.0
 
 - **Font picker for résumé and articles.** Each résumé chooses its own display font (name, headings) and body font; each article chooses one font. Options are shown in a dropdown where each option name is rendered in the font itself.

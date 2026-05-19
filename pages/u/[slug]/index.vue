@@ -34,10 +34,14 @@
 
 <script setup>
 import { ref, computed, onMounted, nextTick } from 'vue'
-import { collection, query, where, getDocs, limit, doc, getDoc } from 'firebase/firestore'
+import {
+  collection, query, where, getDocs, limit,
+  doc, getDoc, updateDoc, increment, serverTimestamp
+} from 'firebase/firestore'
 
 const route = useRoute()
 const config = useRuntimeConfig()
+const auth = useAuthStore()
 const slug = computed(() => String(route.params.slug))
 
 // SSR-friendly data fetching — runs on the server first so we can populate
@@ -77,7 +81,9 @@ const { data, error: fetchError } = await useAsyncData(
       theme: r.theme || {}
     }
 
-    return { resume, displayName }
+    // Return uid so the client can target it for analytics increments and to
+    // check whether the current viewer is the owner.
+    return { resume, displayName, uid }
   }
 )
 
@@ -106,7 +112,39 @@ function fitToWidth() {
 onMounted(async () => {
   await nextTick()
   fitToWidth()
+  // Fire-and-forget analytics increment. See recordView() for ownership and
+  // bot exclusions. Wrapped so a failure here never breaks the page render.
+  try { await recordView() } catch (e) { /* swallow */ }
 })
+
+/**
+ * Increment view-tracking fields on the resume doc. Runs only on the client
+ * after hydration, so:
+ *   - Bots that don't execute JS never trigger this (free filtering)
+ *   - We can access auth state to skip the owner's own views
+ * Firestore security rules permit this anonymous update only on published
+ * résumés and only for the three view-tracking fields (see firestore.rules).
+ */
+async function recordView() {
+  if (!import.meta.client) return
+  const ownerUid = data.value?.uid
+  if (!ownerUid) return
+
+  // Wait until the auth listener has settled so we can reliably tell whether
+  // the visitor is the owner (or any signed-in user).
+  await auth.waitForInit()
+  if (auth.uid === ownerUid) return // owner's own page view doesn't count
+
+  // Honor the user's Do-Not-Track preference if set.
+  if (navigator.doNotTrack === '1') return
+
+  const monthKey = new Date().toISOString().slice(0, 7) // 'YYYY-MM'
+  await updateDoc(doc(useDb(), 'resumes', ownerUid), {
+    viewCount: increment(1),
+    [`viewCountsByMonth.${monthKey}`]: increment(1),
+    lastViewedAt: serverTimestamp()
+  })
+}
 
 // SSR meta tags
 useSeoMeta({
