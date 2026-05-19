@@ -1,8 +1,9 @@
-# Resume & Blog — Nuxt 3
+# PageOne
 
-A quiet, paper-grade résumé and small blog tool. Each editor gets a single public
-URL (`/u/your-handle`) to share. Server-rendered so social previews work right out
-of the box. Version **0.2.0** — migrated to Nuxt 3.
+A quiet, paper-grade home for your résumé and your writing. Each editor gets a
+single public URL (`/u/your-handle`) to share — server-rendered so social previews
+work out of the box, with editorial typography and four hand-built layout
+templates. Version **0.7.0**.
 
 ## Features
 
@@ -179,6 +180,28 @@ Nuxt's default build produces a Node server, so you need a Node-capable host:
 
 Set `NUXT_PUBLIC_SITE_URL` to your production domain in your host's env vars so
 OG meta tags get correct absolute URLs.
+
+## What's new in 0.7.0
+
+**Branding:**
+- **Renamed to PageOne** — wordmark in the dashboard sidebar, ObserverNav, and landing page.
+- **Publication-style colophon** under every public résumé: `PageOne · Vol. 2026 No. 05 · Last revised May 19`.
+- **Issue numbers on the blog list** — each article is numbered like `No. 01`, with the most recent getting the highest number (publication-style).
+- **Subtler page shadow** — the A4 résumé page now uses a 1px ink border + barely-visible shadow, reading more like a clipping than a floating card.
+
+**Templates:**
+- **Four résumé templates**, switchable with one click from the Style card:
+  - **Editorial** (default) — the original 15/15 magazine grid.
+  - **Classic** — single-column traditional CV, no photo, ATS-friendly.
+  - **Profile** — full-height left sidebar with photo and lists, main content on the right.
+  - **Manifest** — minimalist single column, large italic name, generous whitespace.
+- **Template registry** at `components/resume-templates/registry.ts` — adding a new template means: write a `.vue` file in `components/resume-templates/`, add a row to the registry, drop a thumbnail SVG in `public/templates/`, and add it to the dispatch map in `ResumeView.vue`. No other code changes required.
+- **`supports` flags** on each template control which colour pickers appear in the editor — Classic and Manifest hide all advanced background pickers since they don't have sidebars or header zones.
+- **Stub for `templateOptions`** in the resume data model — commented out, kept for future per-template settings (e.g. "show photo? yes/no" on a template that supports both modes).
+
+**Migration:**
+- Existing résumés default to the Editorial template automatically — they'll render exactly as before.
+- No Firestore rule changes needed.
 
 ## What's new in 0.6.0
 

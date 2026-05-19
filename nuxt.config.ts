@@ -1,5 +1,5 @@
 // nuxt.config.ts
-// Resume & Blog — Nuxt 3 configuration
+// PageOne — Nuxt 3 configuration
 import { buildGoogleFontsUrl } from './utils/fonts'
 
 export default defineNuxtConfig({
@@ -32,7 +32,7 @@ export default defineNuxtConfig({
   // single place where you add/remove available fonts.
   app: {
     head: {
-      title: 'Resume & Blog',
+      title: 'PageOne',
       htmlAttrs: { lang: 'en' },
       meta: [
         { charset: 'utf-8' },

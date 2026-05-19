@@ -155,6 +155,27 @@
           <h3 class="section-h">Style</h3>
           <p class="muted-note">Choose how your résumé looks. Changes are previewed live on the right.</p>
 
+          <!-- Template picker — first decision before fonts/colors -->
+          <div class="template-picker">
+            <label class="picker-label">Template</label>
+            <div class="template-grid">
+              <button
+                v-for="t in TEMPLATES"
+                :key="t.id"
+                type="button"
+                class="template-card"
+                :class="{ active: resume.templateId === t.id }"
+                @click="resume.templateId = t.id"
+              >
+                <img :src="t.thumbnail" :alt="`${t.name} layout`" class="template-thumb" />
+                <div class="template-meta">
+                  <div class="template-name">{{ t.name }}</div>
+                  <div class="template-desc">{{ t.description }}</div>
+                </div>
+              </button>
+            </div>
+          </div>
+
           <div class="row-2">
             <FontPicker
               v-model="resume.theme.displayFont"
@@ -188,22 +209,32 @@
             />
           </div>
 
-          <details class="advanced-colors" :open="advancedColorsOpen">
+          <!-- Advanced section — only shown when the current template uses any
+               of these zones. The whole expander disappears for Classic and
+               Manifest since they're single-column. -->
+          <details
+            v-if="activeTemplate.supports.headerBg || activeTemplate.supports.sidebarBg || activeTemplate.supports.photoBg"
+            class="advanced-colors"
+            :open="advancedColorsOpen"
+          >
             <summary @click.prevent="advancedColorsOpen = !advancedColorsOpen">
               {{ advancedColorsOpen ? '− Hide' : '+ Show' }} advanced colors
             </summary>
             <div class="theme-row">
               <ColorPicker
+                v-if="activeTemplate.supports.headerBg"
                 v-model="resume.theme.headerBg"
                 label="Header background"
                 :palette="resumePapers"
               />
               <ColorPicker
+                v-if="activeTemplate.supports.sidebarBg"
                 v-model="resume.theme.sidebarBg"
                 label="Sidebar background"
                 :palette="resumePapers"
               />
               <ColorPicker
+                v-if="activeTemplate.supports.photoBg"
                 v-model="resume.theme.photoBg"
                 label="Photo cell background"
                 :palette="resumeDarks"
@@ -302,6 +333,7 @@ import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore'
 import { ref as sRef, uploadBytes, getDownloadURL } from 'firebase/storage'
 import QrcodeVue from 'qrcode.vue'
 import { exportElementToPdf } from '~/composables/usePdfExport'
+import { TEMPLATES, DEFAULT_TEMPLATE_ID, getTemplate } from '~/components/resume-templates/registry'
 
 definePageMeta({
   middleware: 'auth',
@@ -373,11 +405,23 @@ const resume = reactive({
   rightSections: [],
   published: false,
   theme: { ...DEFAULT_THEME },
+  // Which layout to render. Default 'editorial' preserves the original look
+  // for existing users who don't have this field stored.
+  templateId: DEFAULT_TEMPLATE_ID,
+  // NOTE: templateOptions is reserved for per-template settings (e.g. "show
+  // photo" on a template that supports both modes). Not used by any current
+  // template — added as a future extension point. Future developers wanting
+  // template-specific knobs can read/write this map without schema changes.
+  // templateOptions: {},
   // Analytics — populated from Firestore, never written from this page
   viewCount: 0,
   viewCountsByMonth: {},
   lastViewedAt: null
 })
+
+// Reactively resolves to the current template's metadata so the editor can
+// show/hide colour pickers based on the template's `supports` flags.
+const activeTemplate = computed(() => getTemplate(resume.templateId))
 
 function resetTheme() {
   Object.assign(resume.theme, DEFAULT_THEME)
@@ -490,6 +534,9 @@ async function load() {
     // Merge stored theme with defaults so missing keys still have valid values
     // (handles users upgrading from a pre-theme version of the resume doc).
     resume.theme = { ...DEFAULT_THEME, ...(data.theme || {}) }
+    // Default existing users to 'editorial' so their résumé looks identical
+    // to before they ever picked a template.
+    resume.templateId = data.templateId || DEFAULT_TEMPLATE_ID
     // Analytics
     resume.viewCount = data.viewCount || 0
     resume.viewCountsByMonth = data.viewCountsByMonth || {}
@@ -508,6 +555,7 @@ async function load() {
     ]
     resume.published = false
     resume.theme = { ...DEFAULT_THEME }
+    resume.templateId = DEFAULT_TEMPLATE_ID
   }
   loading.value = false
   await nextTick()
@@ -537,6 +585,7 @@ async function save() {
       rightSections: resume.rightSections,
       published: !!resume.published,
       theme: { ...resume.theme },
+      templateId: resume.templateId,
       updatedAt: serverTimestamp()
     }, { merge: true })
     dirty.value = false
@@ -885,6 +934,74 @@ onMounted(load)
   gap: 16px 12px;
   margin-top: 14px;
   margin-bottom: 14px;
+}
+
+/* ============================================================
+   Template picker — grid of cards at the top of the Style card.
+   ============================================================ */
+.template-picker { margin-bottom: 22px; }
+.picker-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  margin-bottom: 8px;
+}
+.template-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
+}
+.template-card {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  text-align: left;
+  padding: 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-family: inherit;
+  color: inherit;
+  transition: border-color 120ms ease, background 120ms ease;
+}
+.template-card:hover {
+  border-color: var(--accent-soft);
+  background: var(--surface-2);
+}
+.template-card.active {
+  border-color: var(--ink);
+  border-width: 2px;
+  padding: 9px; /* compensate for thicker border */
+  background: var(--surface-2);
+}
+.template-thumb {
+  width: 56px;
+  height: 74px;
+  object-fit: contain;
+  flex-shrink: 0;
+  border-radius: 2px;
+  background: white;
+}
+.template-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.template-name {
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--ink);
+}
+.template-desc {
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.4;
 }
 
 .advanced-colors {

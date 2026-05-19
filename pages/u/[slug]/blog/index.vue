@@ -18,8 +18,11 @@
         </p>
 
         <div v-else class="article-feed">
-          <article v-for="a in data.articles" :key="a.id" class="feed-row">
-            <div class="feed-date">{{ formatDate(a.updatedAt) }}</div>
+          <article v-for="(a, idx) in data.articles" :key="a.id" class="feed-row">
+            <div class="feed-meta">
+              <span class="feed-issue">No. {{ issueNumber(idx) }}</span>
+              <span class="feed-date">{{ formatDate(a.updatedAt) }}</span>
+            </div>
             <div class="feed-body">
               <h2 class="feed-title">
                 <NuxtLink :to="`/u/${slug}/blog/${a.id}`">{{ a.title || 'Untitled' }}</NuxtLink>
@@ -96,6 +99,14 @@ function formatDate(iso) {
   return new Date(iso).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
 }
 
+// Issue numbers — count from the OLDEST article (last in the list, since we
+// sort descending by updatedAt) so the most recent article gets the highest
+// "No." like a publication. e.g. 5 articles: latest = No. 05, oldest = No. 01.
+function issueNumber(visualIndex) {
+  const total = data.value?.articles?.length || 0
+  return String(total - visualIndex).padStart(2, '0')
+}
+
 function excerpt(html) {
   if (!html) return ''
   const text = html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
@@ -154,19 +165,30 @@ function excerpt(html) {
 .article-feed { display: flex; flex-direction: column; }
 .feed-row {
   display: grid;
-  grid-template-columns: 100px 1fr;
+  grid-template-columns: 110px 1fr;
   gap: 24px;
   padding: 28px 0;
   border-bottom: 1px solid var(--border-soft);
 }
 .feed-row:first-child { border-top: 1px solid var(--border-soft); }
-.feed-date {
+.feed-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-top: 6px;
   font-family: var(--font-mono);
+  letter-spacing: 0.05em;
+}
+.feed-issue {
+  font-size: 11px;
+  color: var(--accent);
+  font-weight: 500;
+  letter-spacing: 0.08em;
+}
+.feed-date {
   font-size: 11px;
   color: var(--muted);
-  letter-spacing: 0.05em;
   text-transform: uppercase;
-  padding-top: 6px;
 }
 .feed-title {
   font-family: var(--font-display);

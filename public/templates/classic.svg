@@ -1,0 +1,28 @@
+<svg viewBox="0 0 120 160" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+  <rect width="120" height="160" fill="#ffffff" stroke="#d9d3c5" stroke-width="1"/>
+  <!-- centered name header -->
+  <rect x="36" y="14" width="48" height="3.5" fill="#1a1d24"/>
+  <rect x="44" y="22" width="32" height="1.2" fill="#8a8580"/>
+  <rect x="32" y="28" width="56" height="0.9" fill="#8a8580"/>
+  <!-- accent rule -->
+  <rect x="12" y="36" width="96" height="0.8" fill="#7a4f3a"/>
+  <!-- section 1 -->
+  <rect x="12" y="44" width="22" height="2.2" fill="#7a4f3a"/>
+  <rect x="12" y="50" width="92" height="1" fill="#8a8580"/>
+  <rect x="12" y="53" width="96" height="1" fill="#8a8580"/>
+  <rect x="12" y="56" width="80" height="1" fill="#8a8580"/>
+  <!-- section 2 -->
+  <rect x="12" y="66" width="22" height="2.2" fill="#7a4f3a"/>
+  <rect x="12" y="72" width="92" height="1" fill="#8a8580"/>
+  <rect x="12" y="75" width="86" height="1" fill="#8a8580"/>
+  <rect x="12" y="78" width="92" height="1" fill="#8a8580"/>
+  <rect x="12" y="81" width="74" height="1" fill="#8a8580"/>
+  <!-- section 3 -->
+  <rect x="12" y="92" width="22" height="2.2" fill="#7a4f3a"/>
+  <rect x="12" y="98" width="92" height="1" fill="#8a8580"/>
+  <rect x="12" y="101" width="86" height="1" fill="#8a8580"/>
+  <!-- section 4 (skills inline) -->
+  <rect x="12" y="114" width="22" height="2.2" fill="#7a4f3a"/>
+  <rect x="12" y="120" width="92" height="1" fill="#8a8580"/>
+  <rect x="12" y="123" width="74" height="1" fill="#8a8580"/>
+</svg>

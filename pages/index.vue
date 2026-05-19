@@ -2,19 +2,18 @@
   <div class="home">
     <div class="home-inner">
       <div class="brand">
-        <span class="brand-mark">R</span>
-        <span class="brand-divider">·</span>
-        <span class="brand-text">Resume &amp; Notes</span>
+        <Wordmark size="lg" />
       </div>
 
       <h1 class="lede">
-        A quiet place for your<br />
-        <em>résumé</em> and your <em>writing</em>.
+        Your career, on<br />
+        <em>page one</em>.
       </h1>
 
       <p class="sub">
-        Each editor gets a single, well-tended page on the open web — paper-grade
-        formatting, a small blog beside it, and a link to send to whoever's asking.
+        A quiet, paper-grade home for your résumé and your writing — one well-tended
+        URL to send to whoever's asking. Editorial typography, your colors, your
+        templates, your story up front.
       </p>
 
       <div class="cta-row">
@@ -32,7 +31,7 @@
 
 <script setup>
 useHead({
-  title: 'Resume & Blog — a quiet place for your career page',
+  title: 'PageOne — Your career, on page one',
   meta: [
     { name: 'description', content: 'A personal résumé and blog tool with paper-grade formatting and shareable public links.' }
   ]
@@ -54,25 +53,8 @@ useHead({
 }
 .home-inner { max-width: 640px; text-align: left; }
 .brand {
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
   margin-bottom: 80px;
-  font-size: 13px;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--ink-soft);
 }
-.brand-mark {
-  font-family: var(--font-display);
-  font-size: 28px;
-  font-weight: 600;
-  letter-spacing: 0;
-  text-transform: none;
-  color: var(--ink);
-  line-height: 1;
-}
-.brand-divider { color: var(--accent); }
 
 .lede {
   font-family: var(--font-display);

@@ -10,9 +10,7 @@
       >
         <span /><span /><span />
       </button>
-      <NuxtLink to="/" class="brand-link brand-link--mobile">
-        <span class="mark">R</span><span class="dot">·</span>
-      </NuxtLink>
+      <Wordmark size="sm" />
       <div class="mobile-bar-spacer" />
     </div>
 
@@ -24,9 +22,7 @@
     >
       <div class="dash-side-inner">
         <div class="dash-brand">
-          <NuxtLink to="/" class="brand-link" @click="menuOpen = false">
-            <span class="mark">R</span><span class="dot">·</span>
-          </NuxtLink>
+          <Wordmark size="md" />
         </div>
 
         <nav class="dash-nav">
@@ -117,19 +113,6 @@ async function signOut() {
 }
 
 .dash-brand { margin-bottom: 40px; }
-.brand-link {
-  text-decoration: none;
-  display: inline-flex;
-  align-items: baseline;
-  gap: 4px;
-}
-.mark {
-  font-family: var(--font-display);
-  font-size: 32px;
-  font-weight: 600;
-  color: var(--ink);
-}
-.dot { color: var(--accent); font-size: 24px; }
 
 .dash-nav { display: flex; flex-direction: column; gap: 2px; flex: 1; }
 
@@ -219,8 +202,6 @@ async function signOut() {
     z-index: 30;
   }
   .mobile-bar-spacer { flex: 1; }
-  .brand-link--mobile .mark { font-size: 22px; }
-  .brand-link--mobile .dot { font-size: 18px; }
 
   .hamburger {
     width: 36px;

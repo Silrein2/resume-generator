@@ -1,0 +1,26 @@
+<svg viewBox="0 0 120 160" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+  <rect width="120" height="160" fill="#ffffff" stroke="#d9d3c5" stroke-width="1"/>
+  <!-- large italic name (suggested by slanted bars) -->
+  <rect x="14" y="22" width="56" height="7" fill="#1a1d24" transform="skewX(-8 14 22)"/>
+  <rect x="64" y="29" width="3" height="3" fill="#7a4f3a"/>
+  <!-- meta line -->
+  <rect x="14" y="40" width="32" height="1.4" fill="#1a1d24" opacity="0.7"/>
+  <rect x="48" y="40" width="1" height="1.4" fill="#7a4f3a"/>
+  <rect x="51" y="40" width="46" height="1.2" fill="#8a8580"/>
+  <!-- thin divider -->
+  <rect x="14" y="50" width="92" height="0.4" fill="#1a1d24" opacity="0.15"/>
+  <!-- section 1 -->
+  <rect x="14" y="64" width="22" height="2.4" fill="#7a4f3a"/>
+  <rect x="14" y="70" width="86" height="1" fill="#8a8580"/>
+  <rect x="14" y="73" width="82" height="1" fill="#8a8580"/>
+  <rect x="14" y="76" width="86" height="1" fill="#8a8580"/>
+  <!-- section 2 -->
+  <rect x="14" y="92" width="22" height="2.4" fill="#7a4f3a"/>
+  <rect x="14" y="98" width="86" height="1" fill="#8a8580"/>
+  <rect x="14" y="101" width="80" height="1" fill="#8a8580"/>
+  <rect x="14" y="104" width="86" height="1" fill="#8a8580"/>
+  <rect x="14" y="107" width="68" height="1" fill="#8a8580"/>
+  <!-- section 3 (skills inline) -->
+  <rect x="14" y="124" width="22" height="2.4" fill="#7a4f3a"/>
+  <rect x="14" y="130" width="76" height="1" fill="#8a8580"/>
+</svg>

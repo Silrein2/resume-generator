@@ -27,6 +27,15 @@
         <div class="reader-stage" :style="{ zoom }">
           <ResumeView :resume="resume" />
         </div>
+        <!-- Publication-style colophon, fixed to the bottom of the viewport
+             content so it appears under the résumé but inside the scroll area. -->
+        <footer class="colophon">
+          <Wordmark size="sm" tag="span" />
+          <span class="colophon-sep">·</span>
+          <span class="colophon-issue">{{ issueLabel }}</span>
+          <span v-if="updatedLabel" class="colophon-sep">·</span>
+          <span v-if="updatedLabel" class="colophon-updated">{{ updatedLabel }}</span>
+        </footer>
       </div>
     </template>
   </div>
@@ -67,7 +76,7 @@ const { data, error: fetchError } = await useAsyncData(
 
     // Build a POJO with only the fields we render. Firestore Timestamps
     // (updatedAt/createdAt) aren't serializable by Nuxt's SSR payload encoder,
-    // so we drop them.
+    // so we convert to ISO strings where we want to use them.
     const resume = {
       profileImageUrl: r.profileImageUrl || '',
       name: r.name || displayName,
@@ -78,17 +87,38 @@ const { data, error: fetchError } = await useAsyncData(
       leftSections: r.leftSections || [],
       rightSections: r.rightSections || [],
       // Theme is a flat object of strings — safe to pass through directly.
-      theme: r.theme || {}
+      theme: r.theme || {},
+      // Template id — defaults to 'editorial' to keep pre-template résumés rendering correctly.
+      templateId: r.templateId || 'editorial'
     }
+
+    const updatedAtIso = r.updatedAt?.toDate?.()?.toISOString() || null
 
     // Return uid so the client can target it for analytics increments and to
     // check whether the current viewer is the owner.
-    return { resume, displayName, uid }
+    return { resume, displayName, uid, updatedAtIso }
   }
 )
 
 const resume = computed(() => data.value?.resume)
 const error = computed(() => fetchError.value ? (fetchError.value.statusMessage || 'Failed to load.') : '')
+
+// Colophon — publication-style metadata under the résumé. Volume = year,
+// Number = month from the last-updated timestamp (or current month if unknown).
+const issueLabel = computed(() => {
+  const iso = data.value?.updatedAtIso
+  const d = iso ? new Date(iso) : new Date()
+  const yr = d.getFullYear()
+  const mo = String(d.getMonth() + 1).padStart(2, '0')
+  return `Vol. ${yr} No. ${mo}`
+})
+
+const updatedLabel = computed(() => {
+  const iso = data.value?.updatedAtIso
+  if (!iso) return ''
+  const d = new Date(iso)
+  return `Last revised ${d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}`
+})
 
 // ============================================================
 // Zoom — default fit-to-width, capped at 100% on wide screens.
@@ -231,8 +261,29 @@ useSeoMeta({
   background: transparent;
 }
 
+/* ============================================================
+   Publication colophon — small editorial footer under the page.
+   ============================================================ */
+.colophon {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 18px 16px 32px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+  text-align: center;
+}
+.colophon-sep { color: var(--accent); }
+.colophon-issue,
+.colophon-updated { white-space: nowrap; }
+
 @media (max-width: 600px) {
   .reader-bar-inner { padding: 6px 10px; }
   .reader-stage :deep(.a4-stage) { padding: 8px; }
+  .colophon { padding: 14px 12px 24px; font-size: 10px; }
 }
 </style>

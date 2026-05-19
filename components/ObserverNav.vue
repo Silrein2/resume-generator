@@ -2,9 +2,7 @@
   <header class="obs-nav no-print">
     <div class="obs-nav-inner">
       <div class="left">
-        <NuxtLink to="/" class="brand">
-          <span class="mark">R</span><span class="dot">·</span>
-        </NuxtLink>
+        <Wordmark size="sm" />
         <span class="slug">/u/{{ slug }}</span>
       </div>
 
@@ -50,19 +48,6 @@ const auth = useAuthStore()
   gap: 16px;
 }
 .left { display: flex; align-items: center; gap: 12px; }
-.brand {
-  text-decoration: none;
-  display: inline-flex;
-  align-items: baseline;
-  gap: 3px;
-}
-.brand .mark {
-  font-family: var(--font-display);
-  font-size: 22px;
-  font-weight: 600;
-  color: var(--ink);
-}
-.brand .dot { color: var(--accent); }
 .slug {
   font-family: var(--font-mono);
   font-size: 12px;

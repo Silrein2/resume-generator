@@ -1,48 +1,7 @@
 <template>
   <div class="a4-stage" ref="stageRef">
     <div class="a4-page themed" ref="pageRef" :style="themeStyle">
-      <!-- Top-left: profile image (15% × 15%) -->
-      <div class="a4-top-left">
-        <img v-if="resume.profileImageUrl" :src="resume.profileImageUrl" alt="Profile" />
-        <span v-else class="placeholder">{{ initials }}</span>
-      </div>
-
-      <!-- Top-right: title, phone, email -->
-      <div class="a4-top-right">
-        <h1 class="name">{{ resume.name || '—' }}</h1>
-        <p class="title">{{ resume.title || 'Title' }}</p>
-        <div class="contact">
-          <span v-if="resume.phone">{{ resume.phone }}</span>
-          <span v-if="resume.email">{{ resume.email }}</span>
-          <span v-if="resume.location">{{ resume.location }}</span>
-        </div>
-      </div>
-
-      <!-- Bottom-left: simplified sections (skills, languages, etc.) -->
-      <aside class="a4-bottom-left">
-        <div
-          v-for="section in resume.leftSections"
-          :key="section.id"
-          class="section"
-        >
-          <h3 class="section-title">{{ section.title }}</h3>
-          <ul>
-            <li v-for="(item, i) in cleanItems(section)" :key="i">{{ item }}</li>
-          </ul>
-        </div>
-      </aside>
-
-      <!-- Bottom-right: editable-title sections -->
-      <main class="a4-bottom-right">
-        <div
-          v-for="section in resume.rightSections"
-          :key="section.id"
-          class="section"
-        >
-          <h3 class="section-title">{{ section.title }}</h3>
-          <div class="section-body">{{ section.body }}</div>
-        </div>
-      </main>
+      <component :is="templateComponent" :resume="resume" />
     </div>
   </div>
 </template>
@@ -50,6 +9,12 @@
 <script setup>
 import { computed, ref } from 'vue'
 import { getFont } from '~/utils/fonts'
+import { getTemplate } from '~/components/resume-templates/registry'
+
+import EditorialTemplate from '~/components/resume-templates/EditorialTemplate.vue'
+import ClassicTemplate from '~/components/resume-templates/ClassicTemplate.vue'
+import ProfileTemplate from '~/components/resume-templates/ProfileTemplate.vue'
+import ManifestTemplate from '~/components/resume-templates/ManifestTemplate.vue'
 
 const props = defineProps({
   resume: { type: Object, required: true }
@@ -58,15 +23,20 @@ const props = defineProps({
 const stageRef = ref(null)
 const pageRef = ref(null)
 
-const initials = computed(() => {
-  const n = (props.resume.name || '').trim()
-  if (!n) return '·'
-  return n.split(/\s+/).slice(0, 2).map(s => s[0]).join('').toUpperCase()
-})
+// Dispatch table — keys must match the `id` field in registry.ts.
+const TEMPLATE_COMPONENTS = {
+  editorial: EditorialTemplate,
+  classic: ClassicTemplate,
+  profile: ProfileTemplate,
+  manifest: ManifestTemplate
+}
 
-// Resolve theme values from the resume doc, falling back to the original
-// design tokens. We apply them as inline CSS custom properties on the page
-// container — the .themed styles below consume them.
+const templateDefinition = computed(() => getTemplate(props.resume.templateId))
+const templateComponent = computed(() => TEMPLATE_COMPONENTS[templateDefinition.value.id] || EditorialTemplate)
+
+// Resolve theme values, falling back to design defaults. We apply them as
+// inline CSS custom properties on the page wrapper; every template reads them
+// via var(--rt-*) so the theme system is shared across all templates.
 const themeStyle = computed(() => {
   const t = props.resume.theme || {}
   return {
@@ -81,57 +51,13 @@ const themeStyle = computed(() => {
   }
 })
 
-function cleanItems(section) {
-  const raw = section.itemsText != null
-    ? section.itemsText
-    : (section.items || []).join('\n')
-  return raw.split('\n').map(l => l.trim()).filter(Boolean)
-}
-
 defineExpose({ stageRef, pageRef })
 </script>
 
 <style scoped>
-/* Themed overrides — these take precedence over the global .a4-page rules in
-   assets/main.css. We only override the bits that are theme-driven; the grid
-   layout, dimensions, and structural styles stay in the global stylesheet. */
-
-.a4-page.themed { background: var(--rt-paper); }
-
-.themed .a4-top-left { background: var(--rt-photo-bg); }
-
-.themed .a4-top-right {
-  background: var(--rt-header-bg);
-  color: var(--rt-ink);
-  font-family: var(--rt-body-font);
-}
-.themed .a4-top-right .name {
-  font-family: var(--rt-display-font);
-  color: var(--rt-ink);
-}
-.themed .a4-top-right .title { color: var(--rt-ink); opacity: 0.7; }
-.themed .a4-top-right .contact { color: var(--rt-ink); opacity: 0.75; }
-.themed .a4-top-right .contact span::before { color: var(--rt-accent); }
-
-.themed .a4-bottom-left {
-  background: var(--rt-sidebar-bg);
-  color: var(--rt-ink);
-  font-family: var(--rt-body-font);
-}
-.themed .a4-bottom-left .section-title {
-  font-family: var(--rt-display-font);
-  color: var(--rt-accent);
-}
-.themed .a4-bottom-left li { border-bottom-color: rgba(0, 0, 0, 0.12); }
-
-.themed .a4-bottom-right {
+/* The wrapper just hosts the theme custom properties; layout lives in
+   each template component. Width/height inherited from .a4-page in main.css. */
+.a4-page.themed {
   background: var(--rt-paper);
-  color: var(--rt-ink);
-  font-family: var(--rt-body-font);
-}
-.themed .a4-bottom-right .section-title {
-  font-family: var(--rt-display-font);
-  color: var(--rt-ink);
-  border-bottom-color: var(--rt-accent);
 }
 </style>

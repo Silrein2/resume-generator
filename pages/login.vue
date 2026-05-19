@@ -40,7 +40,7 @@ import { ref } from 'vue'
 
 definePageMeta({ middleware: 'guest' })
 
-useHead({ title: 'Sign in — Resume & Blog' })
+useHead({ title: 'Sign in — PageOne' })
 
 const auth = useAuthStore()
 const router = useRouter()

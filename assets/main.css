@@ -220,121 +220,23 @@ p { margin: 0 0 1em; }
   width: var(--a4-width);
   min-height: var(--a4-height);
   background: var(--resume-paper);
-  box-shadow: var(--shadow-md);
-  display: grid;
-  grid-template-rows: 15% 1fr;
-  grid-template-columns: 15% 1fr;
+  /* A subtle 1px ink-border + barely-there shadow. Reads like a clipping
+     or a printed page rather than a floating UI card. */
+  border: 1px solid var(--border);
+  box-shadow: 0 1px 3px rgba(26, 29, 36, 0.04);
+  /* Layout is owned by the template inside (see components/resume-templates/).
+     We use flex column + the template's own `flex: 1` so the template fills
+     the page's min-height regardless of which template is active. */
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
   position: relative;
 }
 
-.a4-top-left {
-  background: var(--resume-top-left-bg);
-  color: var(--resume-top-left-fg);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 10px;
-  overflow: hidden;
-}
-.a4-top-left img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: 2px;
-}
-.a4-top-left .placeholder {
-  font-family: var(--font-display);
-  font-size: 2rem;
-  font-weight: 400;
-  opacity: 0.6;
-}
-
-.a4-top-right {
-  background: var(--resume-top-right-bg);
-  color: var(--resume-top-right-fg);
-  padding: 18px 28px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 4px;
-}
-.a4-top-right .name {
-  font-family: var(--font-display);
-  font-size: 1.8rem;
-  font-weight: 500;
-  line-height: 1.05;
-  letter-spacing: -0.01em;
-  margin: 0;
-}
-.a4-top-right .title {
-  font-size: 0.95rem;
-  font-weight: 400;
-  color: var(--ink-soft);
-  margin: 0;
-  letter-spacing: 0.04em;
-}
-.a4-top-right .contact {
-  display: flex;
-  gap: 16px;
-  flex-wrap: wrap;
-  margin-top: 4px;
-  font-size: 0.78rem;
-  color: var(--ink-soft);
-}
-.a4-top-right .contact span::before {
-  content: '— ';
-  color: var(--resume-accent);
-}
-
-.a4-bottom-left {
-  background: var(--resume-bottom-left-bg);
-  color: var(--resume-bottom-left-fg);
-  padding: 22px 14px;
-  font-size: 0.72rem;
-  line-height: 1.45;
-}
-.a4-bottom-left .section + .section { margin-top: 18px; }
-.a4-bottom-left .section-title {
-  font-family: var(--font-display);
-  font-size: 0.8rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  margin: 0 0 8px;
-  color: var(--resume-accent);
-}
-.a4-bottom-left ul {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-.a4-bottom-left li {
-  padding: 3px 0;
-  border-bottom: 1px dashed rgba(42, 39, 34, 0.15);
-}
-.a4-bottom-left li:last-child { border-bottom: none; }
-
-.a4-bottom-right {
-  background: var(--resume-bottom-right-bg);
-  color: var(--resume-bottom-right-fg);
-  padding: 24px 32px;
-  font-size: 0.82rem;
-  line-height: 1.55;
-}
-.a4-bottom-right .section + .section { margin-top: 20px; }
-.a4-bottom-right .section-title {
-  font-family: var(--font-display);
-  font-size: 1.05rem;
-  font-weight: 600;
-  margin: 0 0 8px;
-  padding-bottom: 4px;
-  border-bottom: 1.5px solid var(--resume-accent);
-  display: inline-block;
-}
-.a4-bottom-right .section-body {
-  white-space: pre-wrap;
-}
+/* The internal layout of the A4 page (header strip / sidebar / main / etc.)
+   used to live here as global .a4-top-left, .a4-bottom-right, etc. rules.
+   It now lives inside each template under components/resume-templates/,
+   scoped per template. The wrapper above is intentionally bare. */
 
 /* ============================================================
    TipTap content (blog editor + viewer)
