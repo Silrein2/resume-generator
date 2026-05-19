@@ -114,6 +114,62 @@
           </div>
         </div>
 
+        <!-- Style card: fonts and colors for this résumé -->
+        <div class="card">
+          <h3 class="section-h">Style</h3>
+          <p class="muted-note">Choose how your résumé looks. Changes are previewed live on the right.</p>
+
+          <div class="row-2">
+            <FontPicker
+              v-model="resume.theme.displayFont"
+              label="Display font (name, headings)"
+              context="resumeDisplay"
+              inline
+            />
+            <FontPicker
+              v-model="resume.theme.bodyFont"
+              label="Body font"
+              context="resumeBody"
+              inline
+            />
+          </div>
+
+          <div class="theme-row">
+            <ColorPicker
+              v-model="resume.theme.accent"
+              label="Accent"
+              :palette="resumeAccents"
+            />
+            <ColorPicker
+              v-model="resume.theme.paper"
+              label="Paper / main background"
+              :palette="resumePapers"
+            />
+            <ColorPicker
+              v-model="resume.theme.headerBg"
+              label="Header background"
+              :palette="resumePapers"
+            />
+            <ColorPicker
+              v-model="resume.theme.sidebarBg"
+              label="Sidebar background"
+              :palette="resumePapers"
+            />
+            <ColorPicker
+              v-model="resume.theme.photoBg"
+              label="Photo cell background"
+              :palette="resumeDarks"
+            />
+            <ColorPicker
+              v-model="resume.theme.ink"
+              label="Text color"
+              :palette="resumeInks"
+            />
+          </div>
+
+          <button class="btn btn--ghost btn--small" @click="resetTheme">Reset to defaults</button>
+        </div>
+
         <!-- Left column: simplified sections -->
         <div class="card">
           <div class="card-h">
@@ -213,6 +269,55 @@ useHead({ title: 'Edit résumé — Dashboard' })
 const auth = useAuthStore()
 const config = useRuntimeConfig()
 
+// The default theme — also used as the reset target. Each property maps to
+// a CSS custom property on the .a4-page in ResumeView.
+const DEFAULT_THEME = {
+  displayFont: 'fraunces',
+  bodyFont: 'public-sans',
+  accent: '#7a4f3a',
+  paper: '#ffffff',
+  ink: '#1a1d24',
+  headerBg: '#f3eee5',
+  sidebarBg: '#ece6da',
+  photoBg: '#2a2722'
+}
+
+// Color palettes for the swatch picker. Users can still pick custom colors
+// via the "custom" swatch (which opens the native color input).
+const resumeAccents = [
+  { value: '#7a4f3a', label: 'Rust' },
+  { value: '#9b5d3a', label: 'Copper' },
+  { value: '#3d6b48', label: 'Forest' },
+  { value: '#34556d', label: 'Steel blue' },
+  { value: '#6c4a86', label: 'Plum' },
+  { value: '#9b3232', label: 'Brick' },
+  { value: '#1a1d24', label: 'Ink' },
+  { value: '#8a8580', label: 'Stone' }
+]
+const resumePapers = [
+  { value: '#ffffff', label: 'White' },
+  { value: '#fbfaf7', label: 'Bone' },
+  { value: '#f3eee5', label: 'Cream' },
+  { value: '#ece6da', label: 'Warm grey' },
+  { value: '#1f1f23', label: 'Dark ink' },
+  { value: '#2a2722', label: 'Espresso' }
+]
+const resumeDarks = [
+  { value: '#2a2722', label: 'Espresso' },
+  { value: '#1a1d24', label: 'Ink' },
+  { value: '#3d3d3d', label: 'Charcoal' },
+  { value: '#7a4f3a', label: 'Rust' },
+  { value: '#34556d', label: 'Steel blue' },
+  { value: '#f3eee5', label: 'Cream' }
+]
+const resumeInks = [
+  { value: '#1a1d24', label: 'Ink' },
+  { value: '#2a2722', label: 'Espresso' },
+  { value: '#3d3d3d', label: 'Charcoal' },
+  { value: '#f3eee5', label: 'Cream' },
+  { value: '#ffffff', label: 'White' }
+]
+
 const resume = reactive({
   profileImageUrl: '',
   name: '',
@@ -222,8 +327,13 @@ const resume = reactive({
   location: '',
   leftSections: [],
   rightSections: [],
-  published: false
+  published: false,
+  theme: { ...DEFAULT_THEME }
 })
+
+function resetTheme() {
+  Object.assign(resume.theme, DEFAULT_THEME)
+}
 
 const dirty = ref(false)
 const saving = ref(false)
@@ -305,6 +415,9 @@ async function load() {
     }))
     resume.rightSections = data.rightSections || []
     resume.published = !!data.published
+    // Merge stored theme with defaults so missing keys still have valid values
+    // (handles users upgrading from a pre-theme version of the resume doc).
+    resume.theme = { ...DEFAULT_THEME, ...(data.theme || {}) }
   } else {
     resume.name = auth.profile?.displayName || ''
     resume.email = auth.profile?.email || ''
@@ -318,6 +431,7 @@ async function load() {
       { id: uid(), title: 'Education', body: '' }
     ]
     resume.published = false
+    resume.theme = { ...DEFAULT_THEME }
   }
   loading.value = false
   await nextTick()
@@ -346,6 +460,7 @@ async function save() {
       leftSections: cleanedLeft,
       rightSections: resume.rightSections,
       published: !!resume.published,
+      theme: { ...resume.theme },
       updatedAt: serverTimestamp()
     }, { merge: true })
     dirty.value = false
@@ -575,6 +690,14 @@ onMounted(load)
 }
 .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 @media (max-width: 600px) { .row-2 { grid-template-columns: 1fr; } }
+
+.theme-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 16px 12px;
+  margin-top: 14px;
+  margin-bottom: 14px;
+}
 
 .image-row { display: flex; align-items: center; gap: 16px; }
 .thumb {

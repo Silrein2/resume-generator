@@ -31,6 +31,12 @@
         ><s>S</s></button>
         <button
           type="button"
+          :class="{ 'is-active': editor.isActive('underline') }"
+          @click="editor.chain().focus().toggleUnderline().run()"
+          title="Underline"
+        ><u>U</u></button>
+        <button
+          type="button"
           :class="{ 'is-active': editor.isActive('blockquote') }"
           @click="editor.chain().focus().toggleBlockquote().run()"
         >&ldquo;&nbsp;Quote</button>
@@ -73,6 +79,7 @@ import StarterKit from '@tiptap/starter-kit'
 import Image from '@tiptap/extension-image'
 import Link from '@tiptap/extension-link'
 import Placeholder from '@tiptap/extension-placeholder'
+import Underline from '@tiptap/extension-underline'
 import { ref as sRef, uploadBytes, getDownloadURL } from 'firebase/storage'
 
 const props = defineProps({
@@ -89,6 +96,7 @@ const editor = useEditor({
   content: props.modelValue,
   extensions: [
     StarterKit,
+    Underline,
     Image.configure({ inline: false, allowBase64: false }),
     Link.configure({ openOnClick: false, autolink: true }),
     Placeholder.configure({ placeholder: 'Start writing your article…' })

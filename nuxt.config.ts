@@ -1,5 +1,7 @@
 // nuxt.config.ts
 // Resume & Blog — Nuxt 3 configuration
+import { buildGoogleFontsUrl } from './utils/fonts'
+
 export default defineNuxtConfig({
   compatibilityDate: '2024-08-01',
   devtools: { enabled: true },
@@ -25,7 +27,9 @@ export default defineNuxtConfig({
     }
   },
 
-  // App-wide head config (Google Fonts + favicon)
+  // App-wide head config (Google Fonts + favicon).
+  // The Google Fonts URL is built from utils/fonts.ts so the registry is the
+  // single place where you add/remove available fonts.
   app: {
     head: {
       title: 'Resume & Blog',
@@ -38,10 +42,7 @@ export default defineNuxtConfig({
         { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' },
         { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
         { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: '' },
-        {
-          rel: 'stylesheet',
-          href: 'https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,600;9..144,700&family=Public+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap'
-        }
+        { rel: 'stylesheet', href: buildGoogleFontsUrl() }
       ]
     }
   },

@@ -2,30 +2,38 @@
   <div class="observer">
     <ObserverNav :slug="slug" current="blog" />
 
-    <div class="article-shell">
-      <div v-if="error" class="state state--error">
-        <h2>{{ error }}</h2>
-        <NuxtLink :to="`/u/${slug}/blog`" class="btn btn--ghost">← Back to blog</NuxtLink>
-      </div>
-      <template v-else-if="data">
-        <header class="article-header">
-          <p class="kicker">
-            <NuxtLink :to="`/u/${slug}/blog`">← All articles</NuxtLink>
-          </p>
-          <h1>{{ data.article.title || 'Untitled' }}</h1>
-          <p class="meta">
-            {{ formatDate(data.article.updatedAt) }} · by {{ data.displayName }}
-          </p>
-        </header>
-
-        <article class="article-body" v-html="data.article.content" />
-      </template>
+    <div v-if="error" class="state state--error">
+      <h2>{{ error }}</h2>
+      <NuxtLink :to="`/u/${slug}/blog`" class="btn btn--ghost">← Back to blog</NuxtLink>
     </div>
+    <template v-else-if="data">
+      <!-- Themed page surface — the user's chosen background fills the entire
+           reading area, not just the text column. Their text color applies
+           everywhere inside. -->
+      <div class="themed-surface" :style="surfaceStyle">
+        <div class="article-shell">
+          <header class="article-header">
+            <p class="kicker">
+              <NuxtLink :to="`/u/${slug}/blog`">← All articles</NuxtLink>
+            </p>
+            <h1 :style="{ fontFamily: surfaceStyle.fontFamily }">
+              {{ data.article.title || 'Untitled' }}
+            </h1>
+            <p class="meta">
+              {{ formatDate(data.article.updatedAt) }} · by {{ data.displayName }}
+            </p>
+          </header>
+
+          <article class="article-body" v-html="data.article.content" />
+        </div>
+      </div>
+    </template>
   </div>
 </template>
 
 <script setup>
 import { doc, getDoc, collection, query, where, getDocs, limit } from 'firebase/firestore'
+import { getFont } from '~/utils/fonts'
 
 const route = useRoute()
 const config = useRuntimeConfig()
@@ -56,13 +64,15 @@ const { data, error: fetchError } = await useAsyncData(
     }
 
     const aData = aSnap.data()
-    // Convert Firestore Timestamp to ISO string for SSR serialization
+    // Convert Firestore Timestamp to ISO string for SSR serialization.
+    // Theme is a plain string-keyed object — pass through directly.
     const article = {
       title: aData.title,
       content: aData.content,
       published: aData.published,
       updatedAt: aData.updatedAt?.toDate?.()?.toISOString() || null,
-      createdAt: aData.createdAt?.toDate?.()?.toISOString() || null
+      createdAt: aData.createdAt?.toDate?.()?.toISOString() || null,
+      theme: aData.theme || {}
     }
 
     return { article, displayName, uid }
@@ -70,6 +80,19 @@ const { data, error: fetchError } = await useAsyncData(
 )
 
 const error = computed(() => fetchError.value ? (fetchError.value.statusMessage || 'Failed to load.') : '')
+
+// Build the inline style applied to the themed surface. We pull each theme key
+// with a sensible fallback so old articles (no theme stored) render in the
+// original design.
+const surfaceStyle = computed(() => {
+  const t = data.value?.article?.theme || {}
+  return {
+    fontFamily: getFont(t.font, 'article').cssFamily,
+    background: t.background || '#ffffff',
+    color: t.text || '#1a1d24',
+    '--article-accent': t.accent || '#7a4f3a'
+  }
+})
 
 // Per-article SSR meta tags — clean link previews on social shares.
 useSeoMeta({
@@ -99,12 +122,18 @@ function excerpt(html, max = 200) {
 
 <style scoped>
 .observer { display: flex; flex-direction: column; flex: 1; }
+
+.themed-surface {
+  flex: 1;
+  width: 100%;
+  /* Fonts and colors come from inline :style binding above */
+  transition: background 200ms ease, color 200ms ease;
+}
 .article-shell {
   max-width: 680px;
   margin: 0 auto;
   padding: 60px 24px 80px;
   width: 100%;
-  flex: 1;
 }
 .article-header { margin-bottom: 40px; }
 .kicker {
@@ -113,27 +142,28 @@ function excerpt(html, max = 200) {
   letter-spacing: 0.18em;
   text-transform: uppercase;
   margin: 0 0 16px;
+  opacity: 0.7;
 }
 .kicker a {
   text-decoration: none;
-  color: var(--accent);
+  color: var(--article-accent);
 }
-.kicker a:hover { color: var(--ink); }
+.kicker a:hover { opacity: 0.7; }
 
 .article-header h1 {
-  font-family: var(--font-display);
   font-size: 2.8rem;
   font-weight: 500;
   line-height: 1.1;
   margin: 0 0 12px;
   letter-spacing: -0.02em;
+  color: inherit;
 }
 .meta {
   font-family: var(--font-mono);
   font-size: 12px;
-  color: var(--muted);
   letter-spacing: 0.04em;
   margin: 0;
+  opacity: 0.6;
 }
 
 .state {
@@ -146,7 +176,50 @@ function excerpt(html, max = 200) {
   font-size: 1.8rem;
   margin-bottom: 16px;
 }
+
+/* The TipTap content. Inside a themed-surface, text inherits the user's
+   chosen text color; links and blockquotes pick up the user's accent. */
 .article-body { padding: 0; }
+.article-body :deep(a) {
+  color: var(--article-accent);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.article-body :deep(blockquote) {
+  border-left: 3px solid var(--article-accent);
+  padding-left: 16px;
+  margin: 16px 0;
+  font-style: italic;
+  opacity: 0.85;
+}
+.article-body :deep(h1),
+.article-body :deep(h2),
+.article-body :deep(h3) { color: inherit; }
+.article-body :deep(p),
+.article-body :deep(li) { color: inherit; }
+.article-body :deep(img) {
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--radius);
+  margin: 12px 0;
+}
+.article-body :deep(code) {
+  font-family: var(--font-mono);
+  background: rgba(0, 0, 0, 0.08);
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-size: 0.9em;
+}
+.article-body :deep(pre) {
+  background: rgba(0, 0, 0, 0.85);
+  color: #f3eee5;
+  padding: 16px;
+  border-radius: var(--radius);
+  overflow-x: auto;
+  font-family: var(--font-mono);
+  font-size: 13px;
+}
+.article-body :deep(u) { text-decoration: underline; text-underline-offset: 3px; }
 
 @media (max-width: 600px) {
   .article-shell { padding: 32px 18px 60px; }

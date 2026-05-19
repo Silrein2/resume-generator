@@ -72,7 +72,9 @@ const { data, error: fetchError } = await useAsyncData(
       phone: r.phone || '',
       location: r.location || '',
       leftSections: r.leftSections || [],
-      rightSections: r.rightSections || []
+      rightSections: r.rightSections || [],
+      // Theme is a flat object of strings — safe to pass through directly.
+      theme: r.theme || {}
     }
 
     return { resume, displayName }

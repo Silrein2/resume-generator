@@ -180,6 +180,14 @@ Nuxt's default build produces a Node server, so you need a Node-capable host:
 Set `NUXT_PUBLIC_SITE_URL` to your production domain in your host's env vars so
 OG meta tags get correct absolute URLs.
 
+## What's new in 0.5.0
+
+- **Font picker for résumé and articles.** Each résumé chooses its own display font (name, headings) and body font; each article chooses one font. Options are shown in a dropdown where each option name is rendered in the font itself.
+- **Color pickers for résumé and articles.** Résumé exposes: accent, paper, header background, sidebar background, photo-cell background, and text. Articles expose: background, text, and accent. Each is a row of preset swatches plus a "custom" tile that opens the native color picker.
+- **Font registry at `utils/fonts.ts`.** Single source of truth — to add a font, add an entry there with its Google Fonts URL fragment. The Nuxt config builds the global preload URL from this registry automatically.
+- **Underline added to article toolbar.** Sits next to strikethrough. Uses `@tiptap/extension-underline`.
+- **Live preview on the article editor.** Below the TipTap editor, a preview pane shows the article rendered with the chosen font and colors applied.
+
 ## What's new in 0.4.0
 
 - **Public résumé reader.** The `/u/:slug` page now wraps the résumé in a scrollable viewport with sticky zoom controls. Default zoom auto-fits to viewport width (capped at 100%), so portrait mobile no longer cuts off the left edge. Same control set as the dashboard preview — minus, slider, plus, percentage, and **Fit width** to reset.
